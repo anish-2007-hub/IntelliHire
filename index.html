@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="FbOnH8M14i2CGQwhFpl2skMv_HDdJLus6LHH-hegYhY" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IntelliHire — an interview agent that reasons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --bg-alt: #F2F3EF;
+    --panel: #ffffff;
+    --ink: #16181C;
+    --ink-soft: #4B4E55;
+    --line: #DCDDD6;
+    --line-soft: #E9E9E3;
+    --accent: #8A5A1F;
+    --accent-soft: #F2E6D3;
+    --good: #34633F;
+    --good-soft: #E4EEE3;
+    --warn: #9A5B1E;
+    --warn-soft: #F5E6D3;
+    --risk: #8A3A32;
+    --risk-soft: #F3E1DE;
+    --chip-bg: #EEEEE8;
+    --shadow: 0 1px 2px rgba(20,20,15,0.06);
+    --radius-s: 3px;
+    --radius-m: 6px;
+    font-size: 17px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14151A;
+      --bg-alt: #1B1D23;
+      --panel: #1C1E24;
+      --ink: #ECEBE6;
+      --ink-soft: #B4B4AE;
+      --line: #33353D;
+      --line-soft: #2A2C33;
+      --accent: #D6A25B;
+      --accent-soft: #3A2E1B;
+      --good: #7FB98B;
+      --good-soft: #23301F;
+      --warn: #D6A25B;
+      --warn-soft: #332A18;
+      --risk: #D68A7F;
+      --risk-soft: #33221E;
+      --chip-bg: #23252C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14151A;
+    --bg-alt: #1B1D23;
+    --panel: #1C1E24;
+    --ink: #ECEBE6;
+    --ink-soft: #B4B4AE;
+    --line: #33353D;
+    --line-soft: #2A2C33;
+    --accent: #D6A25B;
+    --accent-soft: #3A2E1B;
+    --good: #7FB98B;
+    --good-soft: #23301F;
+    --warn: #D6A25B;
+    --warn-soft: #332A18;
+    --risk: #D68A7F;
+    --risk-soft: #33221E;
+    --chip-bg: #23252C;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    line-height: 1.55;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  h1, h2, h3 { font-family: "Newsreader", Georgia, serif; font-weight: 500; margin: 0; color: var(--ink); }
+  p { margin: 0; }
+  a { color: inherit; }
+  ::selection { background: var(--accent-soft); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  /* NAV */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 28px; border-bottom: 1px solid var(--line-soft);
+    position: sticky; top: 0; background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+  .wordmark { font-family: "Newsreader", serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.01em; }
+  .wordmark span { color: var(--accent); font-style: italic; }
+  .nav-links { display: flex; gap: 26px; font-size: 0.92rem; color: var(--ink-soft); }
+  .nav-links a { text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+
+  /* HERO */
+  .hero { padding: 84px 28px 70px; max-width: 1080px; margin: 0 auto; }
+  .hero h1 {
+    font-size: clamp(2.1rem, 4.6vw, 3.35rem);
+    line-height: 1.14;
+    max-width: 15ch;
+    letter-spacing: -0.01em;
+  }
+  .hero .lede {
+    margin-top: 26px;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    max-width: 56ch;
+    line-height: 1.6;
+  }
+  .hero .cta-row { margin-top: 34px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 11px 20px;
+    border-radius: var(--radius-s);
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.secondary:hover { border-color: var(--ink); opacity: 1; }
+  .btn.small { padding: 7px 14px; font-size: 0.85rem; }
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .btn[disabled]:hover { opacity: 0.4; }
+
+  /* PROBLEM */
+  .problem { padding: 64px 28px; background: var(--bg-alt); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+  .problem-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+  .problem-grid h3 { font-size: 1.3rem; font-weight: 500; margin-bottom: 14px; }
+  .problem-grid p { color: var(--ink-soft); font-size: 1rem; }
+
+  /* DEMO SECTION */
+  .demo-section { padding: 76px 28px 40px; max-width: 1080px; margin: 0 auto; }
+  .demo-section > .head { max-width: 62ch; margin-bottom: 40px; }
+  .demo-section > .head h2 { font-size: 1.9rem; margin-bottom: 14px; }
+  .demo-section > .head p { color: var(--ink-soft); font-size: 1.02rem; }
+
+  .demo-layout { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: start; }
+
+  .case-sidebar { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 84px; }
+  .case-card {
+    text-align: left; cursor: pointer; background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius-m);
+    padding: 14px 16px; font-family: inherit; color: var(--ink);
+  }
+  .case-card .name { font-weight: 600; font-size: 0.98rem; }
+  .case-card .role { font-size: 0.83rem; color: var(--ink-soft); margin-top: 3px; }
+  .case-card .stage { font-size: 0.76rem; color: var(--ink-soft); margin-top: 8px; }
+  .case-card.active { border-color: var(--ink); box-shadow: var(--shadow); }
+  .case-card.active .stage { color: var(--accent); }
+  .case-card .done-mark { display: none; font-size: 0.76rem; color: var(--good); margin-top: 8px; }
+  .case-card.done .done-mark { display: block; }
+  .case-card.done .stage { display: none; }
+
+  .case-main { min-width: 0; }
+  .case-panel { display: none; }
+  .case-panel.active { display: block; }
+
+  .case-header { padding-bottom: 22px; border-bottom: 1px solid var(--line-soft); margin-bottom: 26px; }
+  .case-header h3 { font-size: 1.55rem; }
+  .case-header .req { font-size: 0.86rem; color: var(--ink-soft); margin-top: 6px; }
+
+  .sources-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 30px; }
+  .source-box { border: 1px solid var(--line-soft); border-radius: var(--radius-m); padding: 14px 16px; background: var(--panel); }
+  .source-box .label { font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .source-box .body { font-size: 0.9rem; line-height: 1.5; }
+  .source-box ul { margin: 0; padding-left: 18px; }
+  .source-box li { margin-bottom: 3px; }
+
+  .stage-actions { margin: 30px 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .stage-note { font-size: 0.85rem; color: var(--ink-soft); }
+
+  .questions { display: flex; flex-direction: column; gap: 16px; margin-bottom: 6px; }
+  .qcard {
+    border: 1px solid var(--line); border-radius: var(--radius-m);
+    padding: 20px 22px; background: var(--panel);
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .qcard.show { opacity: 1; transform: translateY(0); }
+
+  .competency-tag {
+    display: inline-block; font-size: 0.76rem; color: var(--accent);
+    background: var(--accent-soft); padding: 3px 9px; border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .qcard .qtext { font-family: "Newsreader", serif; font-size: 1.12rem; font-weight: 500; margin-bottom: 14px; }
+  .transcript {
+    font-size: 0.92rem; color: var(--ink-soft); border-left: 2px solid var(--line);
+    padding-left: 14px; line-height: 1.6;
+  }
+  .transcript .who { font-size: 0.76rem; color: var(--ink-soft); display: block; margin-bottom: 5px; }
+
+  .score-row {
+    margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line-soft);
+    display: none; align-items: flex-start; gap: 12px;
+  }
+  .score-row.show { display: flex; }
+  .score-badge {
+    font-family: "Newsreader", serif; font-weight: 600; font-size: 1.05rem;
+    white-space: nowrap; padding: 3px 0;
+  }
+  .score-badge.hi { color: var(--good); }
+  .score-badge.mid { color: var(--warn); }
+  .score-badge.lo { color: var(--risk); }
+  .score-note { font-size: 0.88rem; color: var(--ink-soft); }
+
+  .followup {
+    margin-top: 14px; padding: 14px 16px; background: var(--warn-soft);
+    border-radius: var(--radius-m); display: none;
+  }
+  .followup.show { display: block; }
+  .followup .flabel { font-size: 0.78rem; color: var(--warn); margin-bottom: 6px; }
+  .followup .ftext { font-family: "Newsreader", serif; font-size: 1rem; margin-bottom: 6px; }
+  .followup .fwhy { font-size: 0.85rem; color: var(--ink-soft); }
+  .ask-followup-btn { margin-top: 14px; }
+
+  .sources-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 26px 0 24px; }
+  .schip {
+    font-size: 0.82rem; padding: 6px 12px; border-radius: 20px;
+    background: var(--chip-bg); color: var(--ink-soft); border: 1px solid var(--line-soft);
+    opacity: 0.4; transition: opacity 0.4s ease, background 0.4s ease, color 0.4s ease;
+  }
+  .schip.lit { opacity: 1; background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+  .verdict-panel {
+    background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius-m);
+    padding: 28px 30px; margin-top: 4px; margin-bottom: 60px;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .verdict-panel.show { opacity: 1; transform: translateY(0); }
+  .verdict-panel .vlabel { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 8px; }
+  .verdict-panel h3 { font-size: 1.5rem; margin-bottom: 10px; }
+  .verdict-panel .confidence { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 22px; }
+  .evidence-list { display: flex; flex-direction: column; gap: 12px; }
+  .evidence-item { display: flex; gap: 12px; font-size: 0.92rem; align-items: baseline; }
+  .evidence-item .tag {
+    flex: 0 0 auto; font-size: 0.72rem; color: var(--ink-soft);
+    background: var(--panel); border: 1px solid var(--line-soft);
+    padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+  }
+  .evidence-item .etext { color: var(--ink); }
+
+  /* COMPARISON */
+  .compare-section { margin-top: 10px; padding-top: 54px; border-top: 1px solid var(--line-soft); }
+  .compare-section .head h2 { font-size: 1.7rem; margin-bottom: 12px; }
+  .compare-section .head p { color: var(--ink-soft); font-size: 1rem; max-width: 62ch; margin-bottom: 26px; }
+
+  .compare-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  .compare-table th, .compare-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); font-size: 0.92rem; }
+  .compare-table th { font-weight: 500; color: var(--ink-soft); font-size: 0.82rem; }
+  .compare-table td.score { font-family: "Newsreader", serif; font-weight: 600; }
+  .compare-table td.score.hi { color: var(--good); }
+  .compare-table td.score.mid { color: var(--warn); }
+  .compare-table td.score.lo { color: var(--risk); }
+
+  .compare-result {
+    margin-top: 30px; padding: 26px 28px; background: var(--bg-alt);
+    border: 1px solid var(--line); border-radius: var(--radius-m);
+    display: none; opacity: 0; transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    margin-bottom: 60px;
+  }
+  .compare-result.show { display: block; opacity: 1; transform: translateY(0); }
+  .compare-result .vlabel { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 8px; }
+  .compare-result h3 { font-size: 1.4rem; margin-bottom: 14px; }
+  .compare-result p { font-size: 0.96rem; color: var(--ink); line-height: 1.65; }
+  .compare-result p + p { margin-top: 12px; }
+
+  /* HOW IT WORKS */
+  .how { padding: 70px 28px; background: var(--bg-alt); border-top: 1px solid var(--line-soft); }
+  .how-inner { max-width: 1080px; margin: 0 auto; }
+  .how h2 { font-size: 1.7rem; margin-bottom: 20px; }
+  .how-flow { display: flex; gap: 0; flex-wrap: wrap; margin-bottom: 26px; font-size: 0.95rem; }
+  .how-flow .step { flex: 1 1 220px; padding: 16px 20px; border-left: 2px solid var(--line); }
+  .how-flow .step:first-child { border-left: none; }
+  .how-flow .step .k { font-size: 0.78rem; color: var(--accent); margin-bottom: 6px; }
+  .how p.stack { max-width: 74ch; color: var(--ink-soft); font-size: 0.98rem; }
+
+  /* FOOTER */
+  footer { padding: 40px 28px 56px; }
+  footer .foot-inner { max-width: 1080px; margin: 0 auto; border-top: 1px solid var(--line-soft); padding-top: 26px; }
+  footer p { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.6; }
+
+  @media (max-width: 760px) {
+    .problem-grid { grid-template-columns: 1fr; gap: 36px; }
+    .demo-layout { grid-template-columns: 1fr; }
+    .case-sidebar { position: static; flex-direction: row; overflow-x: auto; }
+    .case-card { min-width: 200px; }
+    .sources-grid { grid-template-columns: 1fr; }
+    .how-flow { flex-direction: column; }
+    .how-flow .step { border-left: none; border-top: 2px solid var(--line); padding: 14px 0; }
+    .how-flow .step:first-child { border-top: none; }
+    .hero { padding: 56px 22px 46px; }
+    .nav { padding: 16px 20px; }
+    .compare-table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="wordmark">Intelli<span>Hire</span></div>
+  <div class="nav-links">
+    <a href="#demo">Try the demo</a>
+    <a href="#how">How it works</a>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Same candidate. Two interviewers. Two completely different verdicts.</h1>
+  <p class="lede">IntelliHire reads the job description and a candidate's resume, drafts the questions the role actually needs answered, scores every response against that role's rubric, then reasons across past interviews and hiring policy before it recommends anything — including which of two candidates to hire.</p>
+  <div class="cta-row">
+    <a href="#demo"><button class="btn">Open a live interview file</button></a>
+    <a href="#how"><button class="btn secondary">See how it reasons</button></a>
+  </div>
+</div>
+
+<div class="problem">
+  <div class="problem-grid">
+    <div class="col now">
+      <h3>What happens today</h3>
+      <p>Most AI interview tools ask a preset list of questions and transcribe the answers. There's no judgment and no memory of what a rubric, a policy, or an earlier round already established. So two interviewers can sit across the same candidate and walk away with two different verdicts, and neither can point to why.</p>
+    </div>
+    <div class="col next">
+      <h3>What IntelliHire does instead</h3>
+      <p>It's one agent, not a form. IntelliHire reasons jointly over the job description, the resume, prior interview notes and hiring policy, generates questions from that context, scores answers against the role's actual rubric, and turns the result into a recommendation with a trail back to the evidence that produced it.</p>
+    </div>
+  </div>
+</div>
+
+<div class="demo-section" id="demo">
+  <div class="head">
+    <h2>Try it: reason through a real interview file</h2>
+    <p>One requisition, two candidates. Open a case, generate its interview, evaluate the responses, then run cross-source reasoning. Once both candidates have been evaluated, IntelliHire will compare them and recommend which one to hire.</p>
+  </div>
+
+  <div class="demo-layout">
+    <div class="case-sidebar">
+      <button class="case-card active" data-case="priya">
+        <div class="name">Priya Nair</div>
+        <div class="role">Senior Backend Engineer</div>
+        <div class="stage">Not yet evaluated</div>
+        <div class="done-mark">Evaluated</div>
+      </button>
+      <button class="case-card" data-case="arjun">
+        <div class="name">Arjun Verma</div>
+        <div class="role">Senior Backend Engineer</div>
+        <div class="stage">Not yet evaluated</div>
+        <div class="done-mark">Evaluated</div>
+      </button>
+    </div>
+
+    <div class="case-main">
+
+      <!-- PRIYA -->
+      <div class="case-panel active" id="panel-priya">
+        <div class="case-header">
+          <h3>Priya Nair</h3>
+          <div class="req">Req ENG-1042 · Senior Backend Engineer, Payments Platform · screened 3 days ago</div>
+        </div>
+
+        <div class="sources-grid">
+          <div class="source-box">
+            <div class="label">Job description</div>
+            <div class="body">Own reliability for the payments platform. 4+ years building distributed systems, comfort with on-call, experience migrating a monolith to services.</div>
+          </div>
+          <div class="source-box">
+            <div class="label">Resume on file</div>
+            <div class="body"><ul>
+              <li>4 yrs backend, fintech startup</li>
+              <li>Led ledger service migration: monolith → 6 microservices</li>
+              <li>On-call rotation lead, 18 months</li>
+              <li>Mentors 2 junior engineers</li>
+            </ul></div>
+          </div>
+          <div class="source-box">
+            <div class="label">Prior interview notes</div>
+            <div class="body">Round 1 screen: strong system-design signal (4.2/5). Interviewer flagged that failure-recovery depth wasn't tested.</div>
+          </div>
+          <div class="source-box">
+            <div class="label">Hiring policy on file</div>
+            <div class="body">Senior Backend hires must demonstrate on-call ownership and narrate one production incident end-to-end.</div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button class="btn stage-btn" data-stage="generate" data-case="priya">Generate interview questions</button>
+        </div>
+
+        <div class="questions" id="questions-priya">
+          <div class="qcard" data-q="1">
+            <span class="competency-tag">Distributed systems design</span>
+            <p class="qtext">Walk me through how you'd split a monolithic ledger service into microservices without breaking financial consistency.</p>
+            <div class="transcript"><span class="who">Priya's response</span>Named a saga pattern for the multi-step transaction, idempotency keys on every write, and a dual-write reconciliation job to catch drift during cutover.</div>
+            <div class="score-row" data-score="5">
+              <div class="score-badge hi">5/5</div>
+              <div class="score-note">Named saga pattern + reconciliation job. Matches the JD's migration requirement and the resume's ledger-split project directly.</div>
+            </div>
+          </div>
+          <div class="qcard" data-q="2">
+            <span class="competency-tag">Incident ownership</span>
+            <p class="qtext">Tell me about a production incident you owned end-to-end.</p>
+            <div class="transcript"><span class="who">Priya's response</span>Described a payment-duplication incident: root cause was a retried request without an idempotency key, walked through the rollback, then the postmortem and the fix that shipped.</div>
+            <div class="score-row" data-score="4">
+              <div class="score-badge hi">4/5</div>
+              <div class="score-note">Concrete postmortem detail. Satisfies the policy's incident-narrative requirement and lines up with 18 months as on-call lead.</div>
+            </div>
+          </div>
+          <div class="qcard" data-q="3">
+            <span class="competency-tag">Data consistency trade-offs</span>
+            <p class="qtext">How do you decide between strong and eventual consistency for a given service?</p>
+            <div class="transcript"><span class="who">Priya's response</span>Correctly walked through the CAP theorem trade-offs in general terms, but didn't tie the answer to a specific decision she'd made.</div>
+            <div class="score-row" data-score="3">
+              <div class="score-badge mid">3/5</div>
+              <div class="score-note">Theory is sound, but there's no example behind it — the same gap round 1 flagged on failure-recovery depth.</div>
+            </div>
+            <div class="followup">
+              <div class="flabel">Adaptive follow-up, asked live</div>
+              <p class="ftext">Can you walk me through one real case where you chose eventual consistency — and what broke, or almost broke, because of it?</p>
+              <p class="fwhy">Asked because the answer stayed theoretical. IntelliHire flags this pattern rather than scoring around it, since it's the second round to surface it.</p>
+            </div>
+            <button class="btn small secondary ask-followup-btn" data-q="3">Ask a follow-up</button>
+          </div>
+          <div class="qcard" data-q="4">
+            <span class="competency-tag">Stakeholder communication</span>
+            <p class="qtext">How did you explain the migration's risk to non-engineering stakeholders?</p>
+            <div class="transcript"><span class="who">Priya's response</span>Translated the technical risk into a rollout timeline and customer-impact window for product and support, and proposed a staged rollback plan they could sign off on.</div>
+            <div class="score-row" data-score="4">
+              <div class="score-badge hi">4/5</div>
+              <div class="score-note">Consistent with mentoring two juniors on the resume — someone used to explaining decisions, not just making them.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button class="btn secondary stage-btn" data-stage="evaluate" data-case="priya" disabled>Evaluate responses against rubric</button>
+        </div>
+        <div class="stage-actions">
+          <button class="btn stage-btn" data-stage="reason" data-case="priya" disabled>Run cross-source reasoning</button>
+        </div>
+
+        <div class="sources-strip" id="strip-priya">
+          <span class="schip" data-src="jd">Job description</span>
+          <span class="schip" data-src="resume">Resume</span>
+          <span class="schip" data-src="prior">Prior interview notes</span>
+          <span class="schip" data-src="policy">Hiring policy</span>
+        </div>
+
+        <div class="verdict-panel" id="verdict-priya">
+          <div class="vlabel">Recommendation</div>
+          <h3>Advance — with one follow-up on consistency trade-offs</h3>
+          <p class="confidence">High confidence on system design and incident ownership. Medium confidence on data-consistency depth, pending the follow-up answer.</p>
+          <div class="evidence-list">
+            <div class="evidence-item"><span class="tag">Resume + JD</span><span class="etext">Four years on distributed backend systems, including one monolith-to-microservices migration — matches the role's core requirement directly.</span></div>
+            <div class="evidence-item"><span class="tag">This interview</span><span class="etext">Named a specific saga-pattern and reconciliation strategy for the ledger-split question — concrete, not textbook.</span></div>
+            <div class="evidence-item"><span class="tag">Policy</span><span class="etext">On-call ownership and an incident narrative are required at this level; the payment-duplication postmortem satisfies both.</span></div>
+            <div class="evidence-item"><span class="tag">Prior interview</span><span class="etext">Round 1 flagged shallow answers on failure-recovery depth. This round's consistency answer repeats that pattern — recommend resolving it with a follow-up, not a pass or fail.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARJUN -->
+      <div class="case-panel" id="panel-arjun">
+        <div class="case-header">
+          <h3>Arjun Verma</h3>
+          <div class="req">Req ENG-1042 · Senior Backend Engineer, Payments Platform · screened 2 days ago</div>
+        </div>
+
+        <div class="sources-grid">
+          <div class="source-box">
+            <div class="label">Job description</div>
+            <div class="body">Own reliability for the payments platform. 4+ years building distributed systems, comfort with on-call, experience migrating a monolith to services.</div>
+          </div>
+          <div class="source-box">
+            <div class="label">Resume on file</div>
+            <div class="body"><ul>
+              <li>5 yrs backend, logistics platform</li>
+              <li>Rebuilt order processing on Kafka, event-driven</li>
+              <li>Secondary on-call rotation, wrote failure runbooks</li>
+              <li>No lead on-call or incident-owner experience listed</li>
+            </ul></div>
+          </div>
+          <div class="source-box">
+            <div class="label">Prior interview notes</div>
+            <div class="body">Recruiter screen: strong builder, described himself as "more comfortable building than firefighting."</div>
+          </div>
+          <div class="source-box">
+            <div class="label">Hiring policy on file</div>
+            <div class="body">Senior Backend hires must demonstrate on-call ownership and narrate one production incident end-to-end.</div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button class="btn stage-btn" data-stage="generate" data-case="arjun">Generate interview questions</button>
+        </div>
+
+        <div class="questions" id="questions-arjun">
+          <div class="qcard" data-q="1">
+            <span class="competency-tag">Distributed systems design</span>
+            <p class="qtext">Walk me through how you'd split a monolithic ledger service into microservices without breaking financial consistency.</p>
+            <div class="transcript"><span class="who">Arjun's response</span>Described an event-sourcing approach with a Kafka topic per aggregate and replay-based consistency checks, drawing on his order-processing rebuild — but stayed general rather than addressing ledger-specific financial invariants.</div>
+            <div class="score-row" data-score="4">
+              <div class="score-badge hi">4/5</div>
+              <div class="score-note">Solid event-driven instinct from real experience, though the answer doesn't engage with the finance-specific consistency requirements the JD calls out.</div>
+            </div>
+          </div>
+          <div class="qcard" data-q="2">
+            <span class="competency-tag">Incident ownership</span>
+            <p class="qtext">Tell me about a production incident you owned end-to-end.</p>
+            <div class="transcript"><span class="who">Arjun's response</span>Described an order-processing lag he noticed as secondary on-call, then escalated to the primary engineer, who diagnosed and shipped the fix.</div>
+            <div class="score-row" data-score="2">
+              <div class="score-badge lo">2/5</div>
+              <div class="score-note">Describes an incident he supported, not one he owned start to finish. Policy requires an owned incident narrative at this level — this doesn't clear that bar.</div>
+            </div>
+          </div>
+          <div class="qcard" data-q="3">
+            <span class="competency-tag">Data consistency trade-offs</span>
+            <p class="qtext">How do you decide between strong and eventual consistency for a given service?</p>
+            <div class="transcript"><span class="who">Arjun's response</span>Gave a specific example: chose eventual consistency for warehouse inventory counts, described exactly what broke during a flash sale, and the reconciliation fix that followed.</div>
+            <div class="score-row" data-score="5">
+              <div class="score-badge hi">5/5</div>
+              <div class="score-note">Concrete trade-off tied to a real failure and fix — the strongest answer either candidate gave on this competency.</div>
+            </div>
+          </div>
+          <div class="qcard" data-q="4">
+            <span class="competency-tag">Stakeholder communication</span>
+            <p class="qtext">How did you explain migration risk to non-engineering stakeholders?</p>
+            <div class="transcript"><span class="who">Arjun's response</span>Pointed to the runbooks he writes for on-call handoffs, but described little direct negotiation with non-technical stakeholders.</div>
+            <div class="score-row" data-score="3">
+              <div class="score-badge mid">3/5</div>
+              <div class="score-note">Runbooks show documentation discipline, but the answer doesn't demonstrate translating risk for a non-technical audience directly.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button class="btn secondary stage-btn" data-stage="evaluate" data-case="arjun" disabled>Evaluate responses against rubric</button>
+        </div>
+        <div class="stage-actions">
+          <button class="btn stage-btn" data-stage="reason" data-case="arjun" disabled>Run cross-source reasoning</button>
+        </div>
+
+        <div class="sources-strip" id="strip-arjun">
+          <span class="schip" data-src="jd">Job description</span>
+          <span class="schip" data-src="resume">Resume</span>
+          <span class="schip" data-src="prior">Prior interview notes</span>
+          <span class="schip" data-src="policy">Hiring policy</span>
+        </div>
+
+        <div class="verdict-panel" id="verdict-arjun">
+          <div class="vlabel">Recommendation</div>
+          <h3>Do not advance for this req — hasn't owned an incident</h3>
+          <p class="confidence">High confidence he clears the systems-design and consistency bars. Low confidence on incident ownership, which this role's policy requires.</p>
+          <div class="evidence-list">
+            <div class="evidence-item"><span class="tag">Resume + JD</span><span class="etext">Five years backend, including an event-driven order-processing rebuild — meets the JD's systems-experience bar.</span></div>
+            <div class="evidence-item"><span class="tag">This interview</span><span class="etext">Concrete, specific answer on consistency trade-offs — the strongest signal of either candidate on this competency.</span></div>
+            <div class="evidence-item"><span class="tag">Policy</span><span class="etext">Senior Backend hires must own an incident end-to-end. His account describes supporting one as secondary on-call, not owning it.</span></div>
+            <div class="evidence-item"><span class="tag">Prior interview</span><span class="etext">Recruiter screen noted he's "more comfortable building than firefighting" — this round confirms that read.</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="compare-section">
+    <div class="head">
+      <h2>Compare candidates for this requisition</h2>
+      <p>Once both candidates have gone through evaluation, IntelliHire lines up their scores against the same rubric and states which one it recommends hiring — and why.</p>
+    </div>
+    <div class="stage-actions">
+      <button class="btn" id="compare-btn" disabled>Compare Priya and Arjun</button>
+      <span class="stage-note" id="compare-note">Evaluate both candidates first.</span>
+    </div>
+
+    <table class="compare-table" id="compare-table" style="display:none;">
+      <thead>
+        <tr><th>Competency</th><th>Priya Nair</th><th>Arjun Verma</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Distributed systems design</td><td class="score hi">5/5</td><td class="score hi">4/5</td></tr>
+        <tr><td>Incident ownership</td><td class="score hi">4/5</td><td class="score lo">2/5</td></tr>
+        <tr><td>Data consistency trade-offs</td><td class="score mid">3/5</td><td class="score hi">5/5</td></tr>
+        <tr><td>Stakeholder communication</td><td class="score hi">4/5</td><td class="score mid">3/5</td></tr>
+      </tbody>
+    </table>
+
+    <div class="compare-result" id="compare-result">
+      <div class="vlabel">IntelliHire's recommendation</div>
+      <h3>For ENG-1042, hire Priya Nair.</h3>
+      <p>Both candidates clear the distributed-systems bar this role needs, and on consistency trade-offs, Arjun's answer is genuinely the sharper of the two. But this req's policy treats owned incident experience as non-negotiable at the senior level, and that's where the two diverge most: Priya walked through a payment-duplication incident she owned start to finish, while Arjun's account describes supporting one as secondary on-call and escalating it to someone else.</p>
+      <p>That gap outweighs Arjun's edge on consistency depth, because it's a policy requirement, not a style preference. Recommend advancing Priya, pending her follow-up on the consistency question. Arjun is a strong systems thinker — worth keeping on file for a role with a lighter on-call bar, where his event-driven design experience would be the stronger fit.</p>
+    </div>
+  </div>
+</div>
+
+<div class="how" id="how">
+  <div class="how-inner">
+    <h2>From raw HR data to a defensible recommendation</h2>
+    <div class="how-flow">
+      <div class="step">
+        <div class="k">Input</div>
+        <div>Job description, resume, past interview notes, hiring policy, live transcript.</div>
+      </div>
+      <div class="step">
+        <div class="k">Process</div>
+        <div>Generate role-specific questions, evaluate each response against the rubric, then reason jointly across every source above — including across candidates.</div>
+      </div>
+      <div class="step">
+        <div class="k">Output</div>
+        <div>One structured insight and one recommended next step, with a trail back to the evidence, on the recruiter's dashboard.</div>
+      </div>
+    </div>
+    <p class="stack">Built to ship, not to retrain a model: a React interview console and recruiter dashboard, a Node/FastAPI orchestration layer, an LLM reasoning agent for scoring and recommendations, and a PostgreSQL + pgvector store for the JD, resume and policy context it reasons over.</p>
+  </div>
+</div>
+
+
+<script>
+(function () {
+  var cases = ['priya', 'arjun'];
+  var completed = {};
+
+  // Case switching
+  document.querySelectorAll('.case-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      var target = card.getAttribute('data-case');
+      document.querySelectorAll('.case-card').forEach(function (c) { c.classList.remove('active'); });
+      card.classList.add('active');
+      cases.forEach(function (c) {
+        document.getElementById('panel-' + c).classList.toggle('active', c === target);
+      });
+    });
+  });
+
+  function staggerReveal(selector, delayStep) {
+    var els = document.querySelectorAll(selector);
+    els.forEach(function (el, i) {
+      setTimeout(function () { el.classList.add('show'); }, i * delayStep);
+    });
+  }
+
+  // Generate questions
+  document.querySelectorAll('.stage-btn[data-stage="generate"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var c = btn.getAttribute('data-case');
+      btn.textContent = 'Questions generated';
+      btn.disabled = true;
+      staggerReveal('#questions-' + c + ' .qcard', 160);
+      var evalBtn = document.querySelector('.stage-btn[data-stage="evaluate"][data-case="' + c + '"]');
+      evalBtn.disabled = false;
+    });
+  });
+
+  // Evaluate responses
+  document.querySelectorAll('.stage-btn[data-stage="evaluate"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var c = btn.getAttribute('data-case');
+      btn.textContent = 'Responses evaluated';
+      btn.disabled = true;
+      var rows = document.querySelectorAll('#questions-' + c + ' .score-row');
+      rows.forEach(function (row, i) {
+        setTimeout(function () { row.classList.add('show'); }, i * 220);
+      });
+      var reasonBtn = document.querySelector('.stage-btn[data-stage="reason"][data-case="' + c + '"]');
+      setTimeout(function () { reasonBtn.disabled = false; }, rows.length * 220 + 200);
+    });
+  });
+
+  // Ask follow-up
+  document.querySelectorAll('.ask-followup-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var box = btn.previousElementSibling;
+      box.classList.add('show');
+      btn.disabled = true;
+      btn.textContent = 'Follow-up asked';
+    });
+  });
+
+  // Cross-source reasoning
+  document.querySelectorAll('.stage-btn[data-stage="reason"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var c = btn.getAttribute('data-case');
+      btn.textContent = 'Reasoning complete';
+      btn.disabled = true;
+      var chips = document.querySelectorAll('#strip-' + c + ' .schip');
+      chips.forEach(function (chip, i) {
+        setTimeout(function () { chip.classList.add('lit'); }, i * 260);
+      });
+      setTimeout(function () {
+        document.getElementById('verdict-' + c).classList.add('show');
+        completed[c] = true;
+        var card = document.querySelector('.case-card[data-case="' + c + '"]');
+        card.classList.add('done');
+        if (completed.priya && completed.arjun) {
+          var cbtn = document.getElementById('compare-btn');
+          cbtn.disabled = false;
+          document.getElementById('compare-note').textContent = 'Both candidates evaluated.';
+        }
+      }, chips.length * 260 + 250);
+    });
+  });
+
+  // Compare candidates
+  document.getElementById('compare-btn').addEventListener('click', function () {
+    this.textContent = 'Comparison complete';
+    this.disabled = true;
+    document.getElementById('compare-table').style.display = 'table';
+    var result = document.getElementById('compare-result');
+    setTimeout(function () {
+      result.classList.add('show');
+      result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+  });
+})();
+</script>
+
+</body>
+</html>
